@@ -1,0 +1,14 @@
+Part 1
+| inputlookup aoc.csv
+| rex field=test "^[a-z]*(?<num1>\d)[a-z0-9]*?(?<num2>\d)?[a-z]*$"
+| eval num=if(isnull(num2),num1.num1,num1.num2)
+| addtotals col=t labelfield=test label=ALL row=f
+
+Part 2
+| inputlookup aoc.csv
+| rex field=test "(?<num1>one|two|three|four|five|six|seven|eight|nine|\d)"
+| rex field=test ".*(?<num2>one|two|three|four|five|six|seven|eight|nine|\d).*$"
+| eval num1=replace(num1,"one","1"), num1=replace(num1,"two","2"), num1=replace(num1,"three","3"), num1=replace(num1,"four","4"), num1=replace(num1,"five","5"), num1=replace(num1,"six","6"), num1=replace(num1,"seven","7"), num1=replace(num1,"eight","8"), num1=replace(num1,"nine","9")
+| eval num2=replace(num2,"one","1"), num2=replace(num2,"two","2"), num2=replace(num2,"three","3"), num2=replace(num2,"four","4"), num2=replace(num2,"five","5"), num2=replace(num2,"six","6"), num2=replace(num2,"seven","7"), num2=replace(num2,"eight","8"), num2=replace(num2,"nine","9")
+| eval final_num=num1.num2
+| addtotals col=t labelfield=test label=ALL row=f
