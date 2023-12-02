@@ -1,0 +1,19 @@
+Part 1
+| inputlookup aoc.csv
+| rex field=test "Game (?<game_id>\d+):"
+| rex field=test max_match=0 "(?<red>\d+) red"
+| rex field=test max_match=0 "(?<blue>\d+) blue"
+| rex field=test max_match=0 "(?<green>\d+) green"
+| stats max(red) AS red, max(blue) AS blue, max(green) AS green by game_id
+| where red<=12 AND green<=13 AND blue<=14
+| stats sum(game_id) AS total
+
+Part 2
+| inputlookup aoc.csv
+| rex field=test "Game (?<game_id>\d+):"
+| rex field=test max_match=0 "(?<red>\d+) red"
+| rex field=test max_match=0 "(?<blue>\d+) blue"
+| rex field=test max_match=0 "(?<green>\d+) green"
+| stats max(red) AS red, max(blue) AS blue, max(green) AS green by game_id
+| eval power = red * blue * green
+| stats sum(power) AS total
