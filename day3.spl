@@ -1,0 +1,32 @@
+part 1
+| inputlookup aoc.csv
+| rex field=test max_match=0 "(?<parts>\d+)" offset_field=part_index
+| streamstats count AS line
+| rex field=part_index max_match=0 "parts=(?<part_index>\d+-\d+)"
+| mvexpand part_index
+| eval part_index=split(part_index,"-"), part_0=mvindex(part_index,0), part_1=mvindex(part_index,1), part=mvjoin(mvindex(split(test,""),part_0,part_1),"")
+| eval part_end=mvmap(parts,len(test)-len(mvmap(parts, mvindex(split(test,parts),1)))), part_start=mvmap(parts,if(len(mvindex(split(test,parts),0))==0,0,len(mvmap(parts, mvindex(split(test,parts),0)))))
+| map maxsearches=10000 search="| inputlookup aoc.csv | streamstats count | where count=$line$ OR count=$line$+1 OR count=$line$-1 | rex field=test max_match=0 \"(?<split_char>[^0-9\.]+)\" offset_field=index | rex field=index max_match=0 \"split_char=(?<index>\d+)\" | mvexpand index | eval part_0=$part_0$, part_1=$part_1$, matched_part=if($part_0$-1<=index AND $part_1$+1>=index,$part$,0)"
+| where matched_part>0
+| stats sum(matched_part)
+
+part 2
+| inputlookup aoc.csv
+| streamstats count AS line
+| rex field=test max_match=0 "(?<gear>\*)" offset_field=gear_index
+| rex field=gear_index max_match=0 "gear=(?<gear_index>\d+)"
+| where isnotnull(gear_index)
+| mvexpand gear_index
+| map maxsearches=1000 search="| inputlookup aoc.csv
+| streamstats count AS line
+| where line=$line$ OR line=$line$+1 OR line=$line$-1
+| rex field=test max_match=0 \"(?<parts>\d+)\" offset_field=part_index 
+| rex field=part_index max_match=0 \"parts=(?<part_index>\d+-\d+)\"
+| mvexpand part_index
+| eval part_index=split(part_index,\"-\"), part_0=mvindex(part_index,0), part_1=mvindex(part_index,1), part=mvjoin(mvindex(split(test,\"\"),part_0,part_1),\"\"), matched_part=if(part_0-1<=$gear_index$ AND part_1+1>=$gear_index$,part,0), gear=$gear_index$.$line$
+| where matched_part>0
+"
+| stats list(matched_part) AS parts by gear
+| where mvcount(parts)>1
+| eval gears = tonumber(mvindex(parts,0)) * tonumber(mvindex(parts,1))
+| stats sum(gears) AS total
