@@ -1,0 +1,12 @@
+part 1
+| inputlookup aoc.csv
+| rex field=test "Card\s+(?<card>\d+):\s+(?<winners>(\d+\s+)+)\|\s+(?<numbers>(\d+\s*)+)"
+| rex field=winners "(?<winners>\d+)" max_match=0
+| rex field=numbers "(?<numbers>\d+)" max_match=0
+| eval matches=mvmap(numbers, if(in(winners,numbers), 1, 0))
+| stats sum(matches) AS matches by card
+| eval matches=if(matches>0,pow(2,matches-1),0)
+| stats sum(matches) AS total
+
+part 2
+23806951
