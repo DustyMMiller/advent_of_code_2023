@@ -1,0 +1,29 @@
+part 1
+| inputlookup aoc.csv 
+| streamstats count AS hand_id
+| rex field=test "(?<cards>\S+)\s+(?<bid>\d+)"
+| eval hand=split(cards,""), hand=mvmap(hand,case(hand=="A",14,hand=="K",13,hand=="Q",12,hand=="J",11,hand=="T",10,1=1,"0".hand)), orig_cards=cards, cards=mvjoin(hand,"")
+| stats values(bid) AS bid values(cards) AS cards values(orig_cards) AS orig_cards count by hand_id hand
+| eval hand=case(hand=="A",15,hand=="K",14,hand=="Q",13,hand=="J",12,hand=="T",10,1=1,hand), hand=count.".".hand
+| stats values(cards) AS cards values(hand) AS hand values(bid) AS bid values(orig_cards) AS orig_cards by hand_id
+| eval matches=mvmap(hand,mvindex(split(hand,"."),0)), matches=case(max(matches)=3 AND min(matches)=2,3.5, mvcount(matches)=3 AND max(matches)=2,2.5,1=1,max(matches))
+| eval card1=mvjoin(mvindex(split(cards,""),0,1),""), card2=mvjoin(mvindex(split(cards,""),2,3),""), card3=mvjoin(mvindex(split(cards,""),4,5),""), card4=mvjoin(mvindex(split(cards,""),6,7),""), card5=mvjoin(mvindex(split(cards,""),8,9),"")
+| sort matches card1 card2 card3 card4 card5
+| streamstats count AS rank
+| eval winning=bid*rank
+| addtotals col=t row=f
+
+part 2
+| inputlookup aoc.csv
+| streamstats count AS hand_id
+| rex field=test "(?<cards>\S+)\s+(?<bid>\d+)"
+| eval hand=split(cards,""), hand=mvmap(hand,case(hand=="A",14,hand=="K",13,hand=="Q",12,hand=="J","00",hand=="T",10,1=1,"0".hand)), orig_cards=cards, cards=mvjoin(hand,"")
+| stats values(bid) AS bid values(cards) AS cards values(orig_cards) AS orig_cards count by hand_id hand
+| eval jokers=if(hand=="00", count, null()), hand=if(hand=="00",null(),count.".".hand)
+| stats values(cards) AS cards values(hand) AS hand values(bid) AS bid values(jokers) AS jokers values(orig_cards) AS orig_cards by hand_id
+| eval matches=mvmap(hand,mvindex(split(hand,"."),0)), matches=case(isnull(jokers) AND max(matches)=3 AND min(matches)=2, 3.5, max(matches)=2 AND mvcount(matches)=2 AND jokers=1, 3.5, isnull(jokers) AND mvcount(matches)=3 AND max(matches)=2, 2.5, isnull(jokers), max(matches), jokers=5, jokers, 1=1, max(matches)+jokers)
+| eval card1=mvjoin(mvindex(split(cards,""),0,1),""), card2=mvjoin(mvindex(split(cards,""),2,3),""), card3=mvjoin(mvindex(split(cards,""),4,5),""), card4=mvjoin(mvindex(split(cards,""),6,7),""), card5=mvjoin(mvindex(split(cards,""),8,9),"")
+| sort matches card1 card2 card3 card4 card5
+| streamstats count AS rank
+| eval winning=bid*rank
+| addtotals col=t row=f
