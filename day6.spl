@@ -1,0 +1,21 @@
+part 1
+| makeresults | eval test="Time:        62     64     91     90,Distance:   553   1010   1473   1074" | makemv delim="," test
+| rex field=test "Time:\s+(?<time>[\d\s]+)" max_match=0
+| rex field=test "Distance:\s+(?<distance>[\d\s]+)" max_match=0
+| stats values(time) AS time values(distance) AS distance
+| rex field=time max_match=0 "(?<times>\d+)"
+| rex field=distance max_match=0 "(?<distances>\d+)"
+| eval test=mvzip(times,distances)
+| table test
+| mvexpand test
+| eval time=mvindex(split(test,","),0), max_distance=mvindex(split(test,","),1)
+| eval race=mvrange(1,time+1)
+| mvexpand race
+| eval distance=race*(time-race), win=if(distance>max_distance,1,0)
+| stats sum(win) AS win_count by time
+| streamstats count | eval count="TTT".count | eval multiply=1 | xyseries multiply count win_count | foreach TTT* [| eval multiply=multiply*'<<FIELD>>']
+
+part 2
+| makeresults count=62649190 | streamstats count | eval time=62649190, max_distance=553101014731074
+| eval distance=count*(time-count), win=if(distance>max_distance,1,0)
+| stats sum(win) AS total
